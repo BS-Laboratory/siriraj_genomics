@@ -1,4 +1,5 @@
-# Siriraj Genomics Database
+# Siriraj Genomics Data Management 
 
-## REDCap 
-- Folder for REDCap Project data dictionary
+## R script for change CRF scan 
+- change project id 
+- change date BE to AD
