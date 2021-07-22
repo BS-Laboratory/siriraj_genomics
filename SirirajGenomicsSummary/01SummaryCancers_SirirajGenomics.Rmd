@@ -1,0 +1,71 @@
+---
+title: "Summary Cancer of Siriraj Genomics"
+output: 
+  html_document: 
+    toc: yes
+---
+
+# Install packages 
+```{r, warning= FALSE, message=FALSE}
+require(readr)
+require(dplyr)
+require(tidyr)
+require(plotly)
+require(knitr)
+```
+
+# Import data 
+```{r}
+data <-read.csv("Data/SirirajGenomics-CancerPatients_DATA_2021-07-16_1454.csv")
+dim(data)
+names(data)
+data$missing_organ <- rowSums( data[,3:41]) #Check missing if patientw without checking organ phenotype 
+table(data$missing_organ) # 6 cases missing organ phenotype
+data <- data[which(data$missing_organ != 0),] # excluded 6 cases missing organ phenotype
+dim(data)
+data <- data[which(data$hn != "10-63334"),] # excluded hn 10-63334 becuase reported both of cancer and rare disease 
+dim(data)
+```
+## Data Management 
+```{r,}
+#names(data)
+data2<-data[, -c(1:2,42:43)]
+organ <- c("No/ Not related","Brain","Eyes","Head and neck","Lungs or respiratory track","Esophagus","Stomach",
+           "Small intestine","Large bowel and anus","Liver and bile ducts","Pancreas","Uterus or Prostate",
+           "Ovary or Testis","Other internal reproductive organ","Other exteral reproductive organ", "Kidney",
+           "Urinary track","Breast","Heart muscle","Heart valve","Cardiac conduction system","Arterial disease",
+           "Venous system","Lymphatic vessels","Lymph node","Connective tissue","Red Blood Cells","White Blood Cells",
+           "Platelets","Bone marrow","Skeletal muscles", "Bone and joint", "Immune system","Peripheral nervous system","Spinal cord",
+           "Vertebrae","Ears/Hearing","Skin","Others")
+colnames(data2) = organ ## define name of columns 
+```
+
+# Summary frequency and percentage of organ cancers 
+```{r, echo=FALSE}
+cancer_summary <- list()
+for (i in organ) {
+  cancer_summary[[i]] <- data2%>%count(data2[,i] ==1) %>%   mutate(pecent = round((n/sum(n))*100,1)) # Missing data 6 cases 
+}
+cancer_summary_ouput<- data.frame(do.call(rbind,cancer_summary))
+cancer_summary_ouput<- cancer_summary_ouput[cancer_summary_ouput$data2...i.....1,] # select TRUE 
+cancer_summary_ouput$data2...i.....1 <-NULL
+cancer_summary_ouput <- tibble::rownames_to_column(cancer_summary_ouput, "Organ")
+cancer_summary_ouput<- cancer_summary_ouput %>% separate(Organ, c("Organ"),sep = "([.?:])", extra = "drop")
+cancer_summary_ouput <- cancer_summary_ouput[order(-cancer_summary_ouput$n),]
+kable(cancer_summary_ouput, row.names = F)
+```
+
+# Plot frequency of organ cancers 
+-plotly
+```{r,fig.width= 12, fig.height= 8, warning=FALSE,echo=FALSE}
+fig<- plot_ly(cancer_summary_ouput, x = ~Organ, y = ~n, type = 'bar', color =  ~Organ)
+fig %>% layout(title = "Organ Cancers", xaxis = list(title = ""))
+```
+
+-ggplot
+```{r,fig.width= 12, fig.height= 8, warning=FALSE,echo=FALSE}
+ggplot(data=cancer_summary_ouput, aes(x=Organ, y=n, fill=Organ)) +
+  geom_bar(stat="identity",width=0.8, position=position_dodge())+ theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 12))+theme(axis.text.y =  element_text(size = 12))+ theme(legend.position = "none")+
+ geom_text(aes(label = n, y = n + 0.09),position = position_dodge(0.9),color= "black",vjust = 0, size = 3)+ggtitle("Organ Cancers") 
+```
+
